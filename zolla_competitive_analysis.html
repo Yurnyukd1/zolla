@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Конкурентный анализ — Zolla · 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* uForce palette: light base + purple accents */
+    --bg:          #f4f4f8;
+    --surface:     #ffffff;
+    --surface2:    #f0effe;
+    --border:      #e2e0f5;
+    --border-soft: #ece9fb;
+
+    --purple:      #6b48ff;
+    --purple-mid:  #8b6fff;
+    --purple-light:#ede9ff;
+    --purple-muted:#c4b8fa;
+
+    --text:        #1a1730;
+    --text-mid:    #4a4668;
+    --text-muted:  #9490b8;
+
+    --green:       #22c37e;
+    --red:         #ff4d6d;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background: var(--bg); color: var(--text); font-family:'Inter',sans-serif; font-size:14px; line-height:1.6; }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 64px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 32px;
+  }
+  .header-eyebrow {
+    font-size: 11px; font-weight: 600; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--purple); margin-bottom: 14px;
+  }
+  .header-title {
+    font-family: 'Manrope', sans-serif;
+    font-size: 42px; font-weight: 800;
+    line-height: 1.08; letter-spacing: -1px;
+    color: var(--text);
+  }
+  .header-title span { color: var(--purple); }
+  .header-sub { margin-top: 12px; font-size: 13px; color: var(--text-muted); }
+
+  .header-stats {
+    display: flex; gap: 1px;
+    border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+    flex-shrink: 0;
+  }
+  .stat-box { padding: 20px 28px; background: var(--surface); text-align: center; }
+  .stat-box:not(:last-child) { border-right: 1px solid var(--border); }
+  .stat-num {
+    font-family: 'Manrope', sans-serif;
+    font-size: 30px; font-weight: 800; color: var(--purple); line-height: 1;
+  }
+  .stat-lbl { font-size: 11px; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* ── NAV ── */
+  .nav {
+    background: var(--surface);
+    display: flex; padding: 0 64px;
+    border-bottom: 2px solid var(--border);
+    overflow-x: auto;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .nav-btn {
+    padding: 16px 22px; background: transparent; border: none;
+    color: var(--text-muted); font-family: 'Inter', sans-serif;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -2px;
+    transition: all 0.2s; white-space: nowrap;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .nav-btn:hover { color: var(--purple); }
+  .nav-btn.active { color: var(--purple); border-bottom-color: var(--purple); }
+
+  /* ── SECTIONS ── */
+  .section { display: none; padding: 48px 64px 80px; }
+  .section.active { display: block; }
+
+  .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--purple); margin-bottom: 10px; }
+  .sec-title { font-family: 'Manrope', sans-serif; font-size: 28px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; margin-bottom: 8px; }
+  .sec-desc { font-size: 14px; color: var(--text-mid); max-width: 600px; line-height: 1.75; margin-bottom: 40px; }
+
+  /* ── CARDS base ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+  }
+  .card:hover { border-color: var(--purple-muted); box-shadow: 0 4px 20px rgba(107,72,255,0.07); transition: all 0.2s; }
+
+  /* ── BRAND GRID ── */
+  .brand-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 32px; }
+  .brand-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px 22px; transition: all 0.2s; }
+  .brand-card:hover { border-color: var(--purple-muted); box-shadow: 0 4px 24px rgba(107,72,255,0.08); }
+  .brand-card::before { content:''; display:block; width:32px; height:3px; border-radius:2px; background:var(--purple); margin-bottom:16px; }
+  .brand-num { font-size:11px; color:var(--text-muted); letter-spacing:2px; text-transform:uppercase; margin-bottom:6px; }
+  .brand-name { font-family:'Manrope',sans-serif; font-size:20px; font-weight:800; color:var(--text); margin-bottom:22px; }
+  .brow { display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--border-soft); font-size:13px; }
+  .brow:last-of-type { border-bottom:none; }
+  .brow-l { color:var(--text-muted); }
+  .brow-v { color:var(--text); font-weight:600; }
+  .tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:16px; }
+  .tag { background:var(--purple-light); border:1px solid var(--border); border-radius:20px; padding:4px 12px; font-size:11px; color:var(--purple); font-weight:500; }
+
+  /* ── NOTICE ── */
+  .notice {
+    background: var(--purple-light); border: 1px solid var(--border);
+    border-left: 3px solid var(--purple);
+    border-radius: 12px; padding: 18px 22px;
+    font-size: 13px; color: var(--text-mid); line-height: 1.7; margin-bottom: 28px;
+  }
+  .notice strong { color: var(--text); }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x:auto; border-radius:14px; border:1px solid var(--border); }
+  table { width:100%; border-collapse:collapse; font-size:13px; background:var(--surface); }
+  th { text-align:left; padding:13px 16px; background:var(--surface2); color:var(--purple); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:1px; border-bottom:1px solid var(--border); }
+  td { padding:13px 16px; border-bottom:1px solid var(--border-soft); vertical-align:middle; }
+  tr:last-child td { border-bottom:none; }
+  td:first-child { color:var(--text); font-weight:600; }
+  tr.zolla-row td { background:var(--purple-light); }
+  .yes { color:var(--purple); font-weight:700; }
+  .no  { color:var(--border); font-weight:700; }
+  .star { color:var(--purple); font-weight:700; }
+
+  /* ── CHANNEL GRID ── */
+  .ch-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:28px; }
+  .ch-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:30px 26px; transition:all 0.2s; }
+  .ch-card:hover { border-color:var(--purple-muted); }
+  .ch-big { font-family:'Manrope',sans-serif; font-size:48px; font-weight:800; color:var(--purple-light); line-height:1; margin-bottom:4px; }
+  .ch-title { font-family:'Manrope',sans-serif; font-size:15px; font-weight:700; color:var(--text); margin-bottom:12px; }
+  .prog-row { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+  .prog-bar { flex:1; height:3px; background:var(--border); border-radius:2px; overflow:hidden; }
+  .prog-fill { height:100%; background:var(--purple); border-radius:2px; }
+  .prog-pct { font-size:13px; font-weight:700; color:var(--purple); min-width:44px; text-align:right; }
+  .ch-desc { font-size:13px; color:var(--text-mid); line-height:1.65; }
+  .ch-tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:14px; }
+
+  /* ── INSIGHT GRID ── */
+  .ins-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-bottom:28px; }
+  .ins-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:26px; display:flex; gap:18px; transition:all 0.2s; }
+  .ins-card:hover { border-color:var(--purple-muted); }
+  .ins-ico { flex-shrink:0; width:42px; height:42px; border-radius:12px; background:var(--purple-light); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:20px; }
+  .ins-h { font-size:14px; font-weight:700; color:var(--text); margin-bottom:6px; }
+  .ins-p { font-size:13px; color:var(--text-mid); line-height:1.65; }
+
+  /* ── FUNNEL GRID ── */
+  .fun-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:28px; }
+  .fun-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:26px; }
+  .fun-ey { font-size:11px; color:var(--purple); text-transform:uppercase; letter-spacing:2px; margin-bottom:5px; }
+  .fun-title { font-family:'Manrope',sans-serif; font-size:15px; font-weight:700; color:var(--text); margin-bottom:4px; }
+  .fun-brands { font-size:12px; color:var(--text-muted); margin-bottom:20px; }
+  .f-steps { display:flex; flex-direction:column; gap:3px; }
+  .f-step { background:var(--bg); border:1px solid var(--border); padding:10px 14px; font-size:12px; font-weight:500; color:var(--text-mid); text-align:center; border-radius:8px; }
+  .f-step.accent { background:var(--purple-light); border-color:var(--purple-muted); color:var(--purple); font-weight:600; }
+  .f-arr { text-align:center; color:var(--purple-muted); font-size:12px; padding:1px 0; }
+  .f-note { margin-top:16px; font-size:12px; color:var(--text-muted); line-height:1.65; border-top:1px solid var(--border-soft); padding-top:14px; }
+
+  /* ── CREATIVE GRID ── */
+  .cr-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:28px; }
+  .cr-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:26px; }
+  .cr-ico { width:40px; height:40px; border-radius:12px; background:var(--purple-light); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:18px; margin-bottom:16px; }
+  .cr-title { font-family:'Manrope',sans-serif; font-size:15px; font-weight:700; color:var(--text); margin-bottom:5px; }
+  .cr-trig { font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--purple); margin-bottom:12px; }
+  .cr-desc { font-size:13px; color:var(--text-mid); line-height:1.65; }
+  .cr-struct { margin-top:16px; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:14px; font-size:12px; color:var(--text-mid); line-height:2; }
+  .cr-struct span { color:var(--text); font-weight:600; }
+
+  /* ── OPP BOX ── */
+  .opp-box {
+    background: linear-gradient(135deg, var(--purple-light) 0%, #fff 60%);
+    border: 1px solid var(--purple-muted);
+    border-radius: 18px; padding: 42px;
+    margin-bottom: 28px; position:relative; overflow:hidden;
+  }
+  .opp-box::after {
+    content:''; position:absolute; top:-40px; right:-40px;
+    width:200px; height:200px; border-radius:50%;
+    background: radial-gradient(circle, rgba(107,72,255,0.08), transparent 70%);
+    pointer-events:none;
+  }
+  .opp-ey { font-size:11px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:var(--purple); margin-bottom:12px; }
+  .opp-title { font-family:'Manrope',sans-serif; font-size:22px; font-weight:800; color:var(--text); margin-bottom:14px; }
+  .opp-text { font-size:14px; color:var(--text-mid); line-height:1.8; max-width:680px; }
+  .opp-text strong { color:var(--purple); }
+
+  @media (max-width:1024px) {
+    .header,.nav,.section { padding-left:24px; padding-right:24px; }
+    .brand-grid { grid-template-columns:repeat(2,1fr); }
+    .ch-grid,.fun-grid,.cr-grid,.ins-grid { grid-template-columns:1fr; }
+    .header { flex-direction:column; align-items:flex-start; }
+    .header-title { font-size:32px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div>
+    <div class="header-eyebrow">uForce · Конкурентный анализ</div>
+    <h1 class="header-title">Telegram-стратегии<br><span>конкурентов Zolla</span></h1>
+    <p class="header-sub">Fashion-бренды · Посевы · Воронки · Креативы · 2026</p>
+  </div>
+  <div class="header-stats">
+    <div class="stat-box"><div class="stat-num">4</div><div class="stat-lbl">Конкурента</div></div>
+    <div class="stat-box"><div class="stat-num">13</div><div class="stat-lbl">Источников</div></div>
+    <div class="stat-box"><div class="stat-num">3</div><div class="stat-lbl">Типа воронок</div></div>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-btn active" onclick="show('brands',this)">Бренды</button>
+  <button class="nav-btn" onclick="show('sources',this)">Источники</button>
+  <button class="nav-btn" onclick="show('funnels',this)">Воронки</button>
+  <button class="nav-btn" onclick="show('creatives',this)">Креативы</button>
+  <button class="nav-btn" onclick="show('opp',this)">Возможности Zolla</button>
+</nav>
+
+<!-- ═══ BRANDS ═══ -->
+<section class="section active" id="brands">
+  <div class="eyebrow">01 — Обзор</div>
+  <h2 class="sec-title">Анализируемые бренды</h2>
+  <p class="sec-desc">4 конкурента Zolla в fast-fashion сегменте, активно использующие Telegram-посевы как performance-канал трафика.</p>
+
+  <div class="brand-grid">
+    <div class="brand-card">
+      <div class="brand-num">01 / 04</div>
+      <div class="brand-name">Befree</div>
+      <div class="brow"><span class="brow-l">Размещений</span><span class="brow-v">4</span></div>
+      <div class="brow"><span class="brow-l">Воронка</span><span class="brow-v">Промокод</span></div>
+      <div class="brow"><span class="brow-l">Стратегия</span><span class="brow-v">Performance</span></div>
+      <div class="tags"><span class="tag">промокоды</span><span class="tag">сайт + app</span><span class="tag">discount</span></div>
+    </div>
+    <div class="brand-card">
+      <div class="brand-num">02 / 04</div>
+      <div class="brand-name">Gloria Jeans</div>
+      <div class="brow"><span class="brow-l">Размещений</span><span class="brow-v">3</span></div>
+      <div class="brow"><span class="brow-l">Воронка</span><span class="brow-v">Распродажа</span></div>
+      <div class="brow"><span class="brow-l">Стратегия</span><span class="brow-v">Performance</span></div>
+      <div class="tags"><span class="tag">без промокода</span><span class="tag">смежные каналы</span></div>
+    </div>
+    <div class="brand-card">
+      <div class="brand-num">03 / 04</div>
+      <div class="brand-name">SELA</div>
+      <div class="brow"><span class="brow-l">Размещений</span><span class="brow-v">3</span></div>
+      <div class="brow"><span class="brow-l">Воронка</span><span class="brow-v">Скидка 10%</span></div>
+      <div class="brow"><span class="brow-l">Стратегия</span><span class="brow-v">Performance</span></div>
+      <div class="tags"><span class="tag">фиксир. скидка</span><span class="tag">промокодные каналы</span></div>
+    </div>
+    <div class="brand-card">
+      <div class="brand-num">04 / 04</div>
+      <div class="brand-name">O'STIN</div>
+      <div class="brow"><span class="brow-l">Размещений</span><span class="brow-v">3</span></div>
+      <div class="brow"><span class="brow-l">Воронка</span><span class="brow-v">Промокод + скидка</span></div>
+      <div class="brow"><span class="brow-l">Стратегия</span><span class="brow-v">Performance</span></div>
+      <div class="tags"><span class="tag">новая коллекция</span><span class="tag">15–20%</span><span class="tag">промокод</span></div>
+    </div>
+  </div>
+
+  <div class="notice"><strong>Важно о данных:</strong> анализ основан на 13 зафиксированных размещениях. Это качественный срез, а не полная картина медиапланирования. Точные бюджеты, охваты и частота в исходнике не указаны — выводы носят направляющий, а не количественный характер.</div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Бренд</th><th>Промокод</th><th>Фиксир. скидка</th><th>Новая коллекция</th><th>Fashion-позиционирование</th><th>Смежные аудитории</th>
+      </tr></thead>
+      <tbody>
+        <tr><td>Befree</td><td><span class="yes">✓</span></td><td><span class="no">—</span></td><td><span class="no">—</span></td><td><span class="no">—</span></td><td><span class="no">—</span></td></tr>
+        <tr><td>Gloria Jeans</td><td><span class="no">—</span></td><td><span class="yes">✓</span></td><td><span class="no">—</span></td><td><span class="no">—</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>SELA</td><td><span class="no">—</span></td><td><span class="yes">✓</span></td><td><span class="no">—</span></td><td><span class="no">—</span></td><td><span class="no">—</span></td></tr>
+        <tr><td>O'STIN</td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="no">—</span></td><td><span class="yes">✓</span></td></tr>
+        <tr class="zolla-row"><td>Zolla (потенциал →)</td><td><span class="star">✓</span></td><td><span class="star">✓</span></td><td><span class="star">✓</span></td><td><span class="star">★</span></td><td><span class="star">✓</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ SOURCES ═══ -->
+<section class="section" id="sources">
+  <div class="eyebrow">02 — Источники</div>
+  <h2 class="sec-title">Анализ источников размещения</h2>
+  <p class="sec-desc">Все конкуренты сосредоточены в одной экосистеме — Telegram-каналах скидок. Fashion-сегмент при этом остаётся полностью свободным.</p>
+
+  <div class="ch-grid">
+    <div class="ch-card">
+      <div class="ch-big">01</div>
+      <div class="ch-title">Промокодные и скидочные каналы</div>
+      <div class="prog-row"><div class="prog-bar"><div class="prog-fill" style="width:75%"></div></div><div class="prog-pct">≈70–80%</div></div>
+      <p class="ch-desc">Ключевой источник для всех брендов. Аудитория уже в режиме покупки, конверсия высокая, воронка короткая. ЦА: женщины 18–35, price-sensitive, активно покупают онлайн.</p>
+      <div class="ch-tags"><span class="tag">@vse_posobia</span><span class="tag">@ShopShopperChannel</span><span class="tag">@promokody_vsem8</span><span class="tag">@shopwithmeblog</span><span class="tag">@tophalyava916</span></div>
+    </div>
+    <div class="ch-card">
+      <div class="ch-big">02</div>
+      <div class="ch-title">Lifestyle / shopping-подборки</div>
+      <div class="prog-row"><div class="prog-bar"><div class="prog-fill" style="width:15%"></div></div><div class="prog-pct">≈15%</div></div>
+      <p class="ch-desc">Более нативная подача. Формируют желание, а не только реакцию на скидку. Аудитория теплее, но конверсию сложнее отследить напрямую.</p>
+      <div class="ch-tags"><span class="tag">@vugodnue_pokupki</span><span class="tag">@galini_home</span><span class="tag">@supermomskidki</span></div>
+    </div>
+    <div class="ch-card">
+      <div class="ch-big">03</div>
+      <div class="ch-title">Узкосегментные / смежные каналы</div>
+      <div class="prog-row"><div class="prog-bar"><div class="prog-fill" style="width:8%"></div></div><div class="prog-pct">≈5–10%</div></div>
+      <p class="ch-desc">Смежные интересы: мамы, товары для детей, домашние животные. Gloria Jeans и O'STIN расширяют охват за рамки core fashion-аудитории.</p>
+      <div class="ch-tags"><span class="tag">@wb_deti</span><span class="tag">@supermomskidki</span><span class="tag">ГлавГав</span></div>
+    </div>
+  </div>
+
+  <div class="notice"><strong>Что полностью отсутствует у всех конкурентов:</strong> fashion-каналы, lifestyle-инфлюенсеры, trend-сообщества. Весь Telegram-трафик сосредоточен в discount-экосистеме — fashion-сегмент остаётся незанятым.</div>
+
+  <div class="ins-grid">
+    <div class="ins-card"><div class="ins-ico">🎯</div><div><div class="ins-h">Все в одной воронке</div><p class="ins-p">Концентрация в discount-каналах = прямая конкуренция за одну аудиторию. Дифференциация сводится к размеру скидки.</p></div></div>
+    <div class="ins-card"><div class="ins-ico">📱</div><div><div class="ins-h">Performance без брендинга</div><p class="ins-p">Ни один бренд не использует Telegram для имиджа. Только прямая конверсия — без прогрева и эмоциональной связи.</p></div></div>
+    <div class="ins-card"><div class="ins-ico">👩</div><div><div class="ins-h">Единая целевая аудитория</div><p class="ins-p">Все бьют в одну ЦА: женщины 18–35, price-sensitive. Мужская аудитория и сегмент 35+ не охвачены.</p></div></div>
+
+  </div>
+</section>
+
+<!-- ═══ FUNNELS ═══ -->
+<section class="section" id="funnels">
+  <div class="eyebrow">03 — Воронки</div>
+  <h2 class="sec-title">Анализ воронок</h2>
+  <p class="sec-desc">Все конкуренты используют прямую воронку без прогрева. Разница только в механике скидки на входе.</p>
+
+  <div class="fun-grid">
+    <div class="fun-card">
+      <div class="fun-ey">Воронка 1 · Самая популярная</div>
+      <div class="fun-title">Промокод → сайт → покупка</div>
+      <div class="fun-brands">Befree, O'STIN, SELA</div>
+      <div class="f-steps">
+        <div class="f-step accent">📣 Пост с промокодом</div>
+        <div class="f-arr">↓</div>
+        <div class="f-step">🖱 Переход на сайт</div>
+        <div class="f-arr">↓</div>
+        <div class="f-step">🏷 Применение промокода</div>
+        <div class="f-arr">↓</div>
+        <div class="f-step accent">✅ Покупка</div>
+      </div>
+      <div class="f-note">Снижает барьер входа, создаёт urgency, легко измеряется через UTM и уникальные коды.</div>
+    </div>
+    <div class="fun-card">
+      <div class="fun-ey">Воронка 2</div>
+      <div class="fun-title">Распродажа → сайт → покупка</div>
+      <div class="fun-brands">Gloria Jeans</div>
+      <div class="f-steps">
+        <div class="f-step accent">📣 Пост о распродаже</div>
+        <div class="f-arr">↓</div>
+        <div class="f-step">🖱 Переход на сайт</div>
+        <div class="f-arr">↓</div>
+        <div class="f-step accent">✅ Покупка</div>
+      </div>
+      <div class="f-note">Упрощённая версия без уникального промокода. Труднее отследить эффективность конкретного размещения.</div>
+    </div>
+    <div class="fun-card">
+      <div class="fun-ey">Воронка 3</div>
+      <div class="fun-title">Скидка на новинку → сайт</div>
+      <div class="fun-brands">O'STIN</div>
+      <div class="f-steps">
+        <div class="f-step accent">📣 Новая коллекция + скидка</div>
+        <div class="f-arr">↓</div>
+        <div class="f-step">🖱 Переход на сайт</div>
+        <div class="f-arr">↓</div>
+        <div class="f-step">🔍 Изучение коллекции</div>
+        <div class="f-arr">↓</div>
+        <div class="f-step accent">✅ Покупка</div>
+      </div>
+      <div class="f-note">Единственная воронка, работающая на продвижение новых коллекций. Ближе других к fashion-позиционированию.</div>
+    </div>
+  </div>
+
+  <div class="opp-box">
+    <div class="opp-ey">Слабое место конкурентов</div>
+    <div class="opp-title">Прямая воронка без удержания — точка роста для Zolla</div>
+    <p class="opp-text">Ни один конкурент не использует многоступенчатые воронки: нет подписки на Telegram-канал бренда, нет прогревного контента, нет механики возврата аудитории. Пользователь видит пост → переходит → покупает или уходит навсегда. Zolla может выстроить воронку с удержанием через собственный канал или CRM, что снизит стоимость повторной коммуникации и повысит LTV.</p>
+  </div>
+</section>
+
+<!-- ═══ CREATIVES ═══ -->
+<section class="section" id="creatives">
+  <div class="eyebrow">04 — Креативы</div>
+  <h2 class="sec-title">Анализ креативной стратегии</h2>
+  <p class="sec-desc">Три формата, которые используют все конкуренты. Все — рационально-ориентированные, без эмоционального fashion-нарратива.</p>
+
+  <div class="cr-grid">
+    <div class="cr-card">
+      <div class="cr-ico">💰</div>
+      <div class="cr-title">Discount-driven</div>
+      <div class="cr-trig">Триггер: скидка / выгода</div>
+      <p class="cr-desc">Самый распространённый формат. Быстро считывается аудиторией discount-каналов, но не строит образ бренда и не работает на лояльность.</p>
+      <div class="cr-struct">
+        <div>1. <span>Заголовок</span> — «Скидка 20%!»</div>
+        <div>2. <span>Визуал товара</span></div>
+        <div>3. <span>Промокод</span> — BRAND20</div>
+        <div>4. <span>Ссылка</span> на сайт</div>
+      </div>
+    </div>
+    <div class="cr-card">
+      <div class="cr-ico">🧠</div>
+      <div class="cr-title">Рациональный</div>
+      <div class="cr-trig">Триггер: практичность / удобство</div>
+      <p class="cr-desc">Акцент на удобстве, доступности и практичности. «Качество за доступную цену», «удобная доставка», «широкий размерный ряд».</p>
+      <div class="cr-struct">Используется как дополнение к скидочному офферу, а не как самостоятельный нарратив. Встречается реже discount-формата.</div>
+    </div>
+    <div class="cr-card">
+      <div class="cr-ico">🗂</div>
+      <div class="cr-title">Подборки товаров</div>
+      <div class="cr-trig">Триггер: нативность</div>
+      <p class="cr-desc">«Классные находки», «что купить», «скидки на одежду». Органично встраивается в контент канала, вызывает меньше отторжения как реклама.</p>
+      <div class="cr-struct">Используется в lifestyle-каналах. Выше вовлечённость, но сложнее измерить конверсию напрямую.</div>
+    </div>
+  </div>
+
+  <div class="notice"><strong>Что отсутствует у всех конкурентов:</strong> эмоциональные триггеры (стиль, самовыражение, вдохновение), fashion-нарратив (тренды, образы, лукбуки), сторителлинг. Telegram используется исключительно как канал прямого отклика.</div>
+</section>
+
+<!-- ═══ OPPORTUNITY ═══ -->
+<section class="section" id="opp">
+  <div class="eyebrow">05 — Стратегия</div>
+  <h2 class="sec-title">Возможности для Zolla</h2>
+  <p class="sec-desc">На основе анализа конкурентов — четыре направления, которые никто не занял в 2026 году.</p>
+
+  <div class="ins-grid">
+    <div class="ins-card"><div class="ins-ico">✨</div><div><div class="ins-h">Fashion-позиционирование в Telegram</div><p class="ins-p">Ни один конкурент не размещается в fashion- и lifestyle-каналах. Zolla может занять позицию стильного бренда, а не просто «дешёвого».</p></div></div>
+    <div class="ins-card"><div class="ins-ico">🔁</div><div><div class="ins-h">Многоступенчатая воронка</div><p class="ins-p">Подписка на канал Zolla → прогрев → конверсия. Снизит CAC повторных покупок и создаст лояльную аудиторию.</p></div></div>
+    <div class="ins-card"><div class="ins-ico">❤️</div><div><div class="ins-h">Эмоциональные триггеры</div><p class="ins-p">Все конкуренты говорят только о цене. Zolla может говорить о стиле и трендах — с промокодом как дополнением, а не основой.</p></div></div>
+    <div class="ins-card"><div class="ins-ico">🎯</div><div><div class="ins-h">Новые сегменты аудитории</div><p class="ins-p">Конкуренты сфокусированы на women 18–35. Zolla может тестировать мужскую аудиторию, сегмент 35+, офисный стиль.</p></div></div>
+  </div>
+
+  <div class="opp-box">
+    <div class="opp-ey">Итоговая рекомендация</div>
+    <div class="opp-title">Совместить performance и fashion-коммуникацию</div>
+    <p class="opp-text">Разместиться не только в discount-каналах, но и в lifestyle, fashion и тематических сообществах. Выстроить воронку с удержанием через собственный Telegram-канал или CRM. Это позволит Zolla одновременно конкурировать в performance-измерении и занять уникальную позицию — <strong>бренда, который не просто даёт скидку, но и вдохновляет.</strong></p>
+  </div>
+
+  <div class="notice"><strong>Оговорка:</strong> анализ построен на выборке из 13 размещений у 4 конкурентов. Для стратегических решений рекомендуется дополнить количественными данными — охваты каналов, CPM, конверсии, бюджеты.</div>
+</section>
+
+<script>
+  function show(id, btn) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+</script>
+</body>
+</html>
